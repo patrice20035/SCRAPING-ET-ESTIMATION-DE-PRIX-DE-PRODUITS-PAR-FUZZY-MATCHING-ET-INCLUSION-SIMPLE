@@ -1,0 +1,21 @@
+def pages_number_products(cat_name):
+    url = f"https://www.carrefour.fr/r/{cat_name}?noRedirect=1&page=0"
+    response = r.get(url)
+    if response.status_code != 200:
+        print(f"Erreur lors de la requête : {response.status_code}")
+        return 0
+    soup = BeautifulSoup(response.content, 'html.parser')
+    product_elements = soup.select('ul h2')
+    products_per_page = len(product_elements)
+    if products_per_page == 0:
+        print("Aucun produit trouvé sur la page.")
+        return 0
+    # Supposons que le nombre total de produits est affiché dans une balise spécifique, par exemple <span class="total-products">
+    total_products_element = soup.select_one('span.total-products')
+    if total_products_element:
+        total_products = int(total_products_element.text.strip())
+        n_pages = math.ceil(total_products / products_per_page)
+    else:
+        # Si le nombre total de produits n'est pas disponible, on suppose qu'il n'y a qu'une seule page
+        n_pages = 1
+    return n_pages
