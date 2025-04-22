@@ -19,3 +19,41 @@ def pages_number_products(cat_name):
         # Si le nombre total de produits n'est pas disponible, on suppose qu'il n'y a qu'une seule page
         n_pages = 1
     return n_pages
+
+
+
+
+print(r"""The categories are:
+    - bio-et-ecologie
+    - fruits-et-legumes
+    - viandes-et-poissons
+    - pains-et-patisseries
+    - cremerie-et-produits-laitiers
+    - charcuterie-et-traiteur
+    - surgeles
+    - epicerie-salee
+    - epicerie-sucree
+    - beaute-et-sante
+    - boissons
+    - nutrition-et-vegetale
+    - hygiene-et-beaute
+    - entretien-et-nettoyage
+    - animalerie
+    - bebe
+    - jardin
+    - entretien-de-la-maison
+    - maison-et-decoration
+    - cuisine
+    - gros-electromenager
+    - bricolage
+    - velo-trotinettes-et-loisirs
+    - smartphones-et-objets-connectes
+    - image-et-son
+    - informatique-et-bureau
+    - jeux-videos
+    - jeux-et-jouets
+    - mode-et-bagagerie
+    """)
+    list_cat=['bio-et-ecologie','fruits-et-legumes','viandes-et-poissons', 'pains-et-patisseries','cremerie-et-produits-laitiers','charcuterie-et-traiteur','surgeles','mode-et-bagagerie',
+              'epicerie-salee','epicerie-sucree','hygiene-et-beaute','boissons','beaute-et-sante','entretien-et-nettoyage','entretien-de-la-maison','animalerie','bebe','jardin','maison-et-decoration','gros-electromenager',
+              'bricolage','velo-trotinettes-et-loisirs','smartphones-et-objets-connectes','image-et-son','informatique-et-bureau','jeux-videos','jeux-et-jouets',]
