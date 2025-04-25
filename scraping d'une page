@@ -1,0 +1,155 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import pandas as pd
+import os
+import time
+import re
+
+# Liste des catégories disponibles
+CATEGORIES = [
+    'bio-et-ecologie', 'fruits-et-legumes', 'viandes-et-poissons', 'pains-et-patisseries',
+    'cremerie-et-produits-laitiers', 'charcuterie-et-traiteur', 'surgeles', 'epicerie-salee',
+    'epicerie-sucree', 'beaute-et-sante', 'boissons', 'nutrition-et-vegetale', 'hygiene-et-beaute',
+    'entretien-et-nettoyage', 'animalerie', 'bebe', 'jardin', 'entretien-de-la-maison',
+    'maison-et-decoration', 'cuisine', 'gros-electromenager', 'bricolage',
+    'velo-trotinettes-et-loisirs', 'smartphones-et-objets-connectes', 'image-et-son',
+    'informatique-et-bureau', 'jeux-videos', 'jeux-et-jouets', 'mode-et-bagagerie'
+]
+
+# Dossier de sortie
+OUTPUT_FOLDER = r"C:/Users/DELL/OneDrive - etu.unistra.fr/Bureau/cours fac/PROGRAMMATION PYTHON/PROJET/Output"
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+# Demander à l'utilisateur ce qu'il veut scraper
+mode = input("Souhaitez-vous scraper des promotions ou des produits ? [promotions/products] : ").strip().lower()
+while mode not in ["promotions", "products"]:
+    mode = input("Veuillez entrer 'promotions' ou 'products' : ").strip().lower()
+
+# S'il s'agit de produits, demander la catégorie
+if mode == "products":
+    print("\nVoici les catégories disponibles :")
+    for cat in CATEGORIES:
+        print(" -", cat)
+    categorie = input("Quelle catégorie voulez-vous scraper ? Tapez le nom exact : ").strip()
+    while categorie not in CATEGORIES:
+        categorie = input("Catégorie invalide. Réessayez : ").strip()
+else:
+    categorie = None
+
+# Scraping d'une seule page de promotions
+def scrap_single_page_promotions():
+    driver = webdriver.Chrome()
+    driver.get("https://www.carrefour.fr/promotions?noRedirect=1&page=0")
+    time.sleep(5)
+    products = driver.find_elements(By.CLASS_NAME, "product-list-grid__item")
+    data = []
+
+    for p in products:
+        try:
+            name = p.find_element(By.CSS_SELECTOR, "a.product-card-title").text
+        except:
+            name = None
+
+        # Prix principal
+        price = None
+        old_price = None
+        try:
+            price_block = p.find_element(By.CSS_SELECTOR, "div.product-price__amount--main")
+            price_text = price_block.text
+            clean_price = re.sub(r'[^\d,\.]', '', price_text)
+            price = float(clean_price.replace(',', '.'))
+        except:
+            pass
+
+        # Ancien prix
+        # Ancien prix
+        try:
+            old_price_block = p.find_element(By.CSS_SELECTOR, "div.product-price__amount--old")
+            old_price_text = old_price_block.text
+            clean_old_price = re.sub(r'[^\d,\.]', '', old_price_text)
+            old_price = float(clean_old_price.replace(',', '.'))
+        except:
+            old_price = None
+
+
+        try:
+            unit = p.find_element(By.CSS_SELECTOR, "span.product-list-card-plp-grid__per-unit-label").text
+        except:
+            unit = None
+
+        try:
+            promo_description = p.find_element(By.CSS_SELECTOR, "span.promotion-label-refonte__label").text
+        except:
+            promo_description = None
+
+        # Filtrer uniquement les produits avec prix réduit ou promo description
+        if (price and old_price and price != old_price) or promo_description:
+            data.append({
+                "product_name": name,
+                "price": price,
+                "old_price": old_price,
+                "price_difference": round(old_price - price, 2) if price and old_price else None,
+                "percentage_difference": round(((old_price - price) / old_price) * 100, 2) if price and old_price else None,
+                "price_pe r_unit": unit,
+                "promo_description": promo_description,
+                "purchasable": True,
+                "page": 0
+            })
+
+    driver.quit()
+    return pd.DataFrame(data)
+
+# Scraping d'une seule page de produits
+def scrap_single_page_products(categorie):
+    driver = webdriver.Chrome()
+    driver.get(f"https://www.carrefour.fr/r/{categorie}?noRedirect=1&page=0")
+    time.sleep(5)
+    products = driver.find_elements(By.CLASS_NAME, "product-list-grid__item")
+    data = []
+
+    for p in products:
+        try:
+            name = p.find_element(By.CSS_SELECTOR, "a.product-card-title").text
+        except:
+            name = None
+
+        try:
+            price_block = p.find_element(By.CSS_SELECTOR, "div.product-price__amount--main")
+            parts = price_block.find_elements(By.CSS_SELECTOR, "p.product-price__content")
+            price_text = ''.join([part.text for part in parts])
+            price = float(price_text.replace(',', '.').replace('€', '').strip())
+        except:
+            price = None
+
+        try:
+            unit = p.find_element(By.CSS_SELECTOR, "span.product-list-card-plp-grid__per-unit-label").text
+        except:
+            unit = None
+
+        data.append({
+            "product_name": name,
+            "price": price,
+            "price_per_unit": unit,
+            "category": categorie.replace('-', ' ').title(),
+            "purchasable": True,
+            "page": 0
+        })
+
+    driver.quit()
+    return pd.DataFrame(data)
+
+# Exécution et sauvegarde CSV
+if mode == "promotions":
+    df = scrap_single_page_promotions()
+    filename = "carrefour_promotions_page0.csv"
+else:
+    df = scrap_single_page_products(categorie)
+    filename = f"carrefour_products_{categorie}_page0.csv"
+
+csv_path = os.path.join(OUTPUT_FOLDER, filename)
+if not df.empty:
+    df.to_csv(csv_path, index=False)
+    print(f"✅ Fichier CSV enregistré : {csv_path}")
+    print(df.head())
+else:
+    print("⚠️ Aucun produit correspondant aux critères n'a été trouvé.")
