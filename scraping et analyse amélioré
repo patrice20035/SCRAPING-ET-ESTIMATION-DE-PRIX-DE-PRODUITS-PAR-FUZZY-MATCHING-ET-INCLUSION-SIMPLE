@@ -1,0 +1,236 @@
+#code complet avec les améliorations d'analyse
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import pandas as pd
+import os
+import time
+import re
+from rapidfuzz import fuzz  # Ajout pour fuzzy matching
+import matplotlib.pyplot as plt
+
+# Liste des catégories disponibles
+CATEGORIES = [
+    'bio-et-ecologie', 'fruits-et-legumes', 'viandes-et-poissons', 'pains-et-patisseries',
+    'cremerie-et-produits-laitiers', 'charcuterie-et-traiteur', 'surgeles', 'epicerie-salee',
+    'epicerie-sucree', 'beaute-et-sante', 'boissons', 'nutrition-et-vegetale', 'hygiene-et-beaute',
+    'entretien-et-nettoyage', 'animalerie', 'bebe', 'jardin', 'entretien-de-la-maison',
+    'maison-et-decoration', 'cuisine', 'gros-electromenager', 'bricolage',
+    'velo-trotinettes-et-loisirs', 'smartphones-et-objets-connectes', 'image-et-son',
+    'informatique-et-bureau', 'jeux-videos', 'jeux-et-jouets', 'mode-et-bagagerie'
+]
+
+# Dossier de sortie
+OUTPUT_FOLDER = r"C:/Users/DELL/OneDrive - etu.unistra.fr/Bureau/cours fac/PROGRAMMATION PYTHON/PROJET/Output"
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+# Scraper les produits par catégorie pour matcher les promotions ensuite
+def scrap_all_products_for_category_matching():
+    all_products = []
+    for categorie in CATEGORIES:
+        driver = webdriver.Chrome()
+        page = 0
+        while True:
+            driver.get(f"https://www.carrefour.fr/r/{categorie}?noRedirect=1&page={page}")
+            time.sleep(3)
+            products = driver.find_elements(By.CLASS_NAME, "product-list-grid__item")
+            if not products:
+                break
+            for p in products:
+                try:
+                    name = p.find_element(By.CSS_SELECTOR, "a.product-card-title").text
+                    all_products.append({"product_name": name, "category": categorie.replace('-', ' ').title()})
+                except:
+                    continue
+            page += 1
+        driver.quit()
+    return pd.DataFrame(all_products)
+
+# Scraping des promotions avec association des catégories via matching
+def scrap_all_pages_promotions(product_catalog):
+    driver = webdriver.Chrome()
+    page = 0
+    all_data = []
+    while True:
+        driver.get(f"https://www.carrefour.fr/promotions?noRedirect=1&page={page}")
+        time.sleep(5)
+        products = driver.find_elements(By.CLASS_NAME, "product-list-grid__item")
+        if not products:
+            break
+
+        for p in products:
+            try:
+                name = p.find_element(By.CSS_SELECTOR, "a.product-card-title").text
+            except:
+                name = None
+
+            price = None
+            old_price = None
+            try:
+                price_block = p.find_element(By.CSS_SELECTOR, "div.product-price__amount--main")
+                price_text = price_block.text
+                clean_price = re.sub(r'[^\d,\.]', '', price_text)
+                price = float(clean_price.replace(',', '.'))
+            except:
+                pass
+
+            try:
+                old_price_block = p.find_element(By.CSS_SELECTOR, "div.product-price__amount--old")
+                old_price_text = old_price_block.text
+                clean_old_price = re.sub(r'[^\d,\.]', '', old_price_text)
+                old_price = float(clean_old_price.replace(',', '.'))
+            except:
+                pass
+
+            try:
+                unit = p.find_element(By.CSS_SELECTOR, "span.product-list-card-plp-grid__per-unit-label").text
+            except:
+                unit = None
+
+            try:
+                promo_description = p.find_element(By.CSS_SELECTOR, "span.promotion-label-refonte__label").text
+            except:
+                promo_description = None
+
+            best_match = product_catalog.copy()
+            best_match['similarity'] = best_match['product_name'].apply(lambda x: fuzz.partial_ratio(name.lower(), x.lower()) if pd.notnull(x) else 0)
+            best_match = best_match.sort_values(by='similarity', ascending=False).head(1)
+            category = best_match['category'].values[0] if not best_match.empty and best_match['similarity'].values[0] > 70 else None
+
+            if (price and old_price and price != old_price) or promo_description:
+                all_data.append({
+                    "product_name": name,
+                    "price": price,
+                    "old_price": old_price,
+                    "difference": round(old_price - price, 2) if price and old_price else None,
+                    "percentage_difference": round(((old_price - price) / old_price) * 100, 2) if price and old_price else None,
+                    "price_per_unit": unit,
+                    "promo_description": promo_description,
+                    "category": category,
+                    "purchasable": True,
+                    "page": page
+                })
+        page += 1
+    driver.quit()
+    return pd.DataFrame(all_data)
+
+# Scraping des produits
+def scrap_all_pages_products(categorie):
+    driver = webdriver.Chrome()
+    page = 0
+    all_data = []
+    while True:
+        driver.get(f"https://www.carrefour.fr/r/{categorie}?noRedirect=1&page={page}")
+        time.sleep(3)
+        products = driver.find_elements(By.CLASS_NAME, "product-list-grid__item")
+        if not products:
+            break
+        for p in products:
+            try:
+                name = p.find_element(By.CSS_SELECTOR, "a.product-card-title").text
+            except:
+                name = None
+
+            try:
+                price_block = p.find_element(By.CSS_SELECTOR, "div.product-price__amount--main")
+                parts = price_block.find_elements(By.CSS_SELECTOR, "p.product-price__content")
+                price_text = ''.join([part.text for part in parts])
+                price = float(price_text.replace(',', '.').replace('€', '').strip())
+            except:
+                price = None
+
+            try:
+                unit = p.find_element(By.CSS_SELECTOR, "span.product-list-card-plp-grid__per-unit-label").text
+            except:
+                unit = None
+
+            all_data.append({
+                "product_name": name,
+                "price": price,
+                "price_per_unit": unit,
+                "category": categorie.replace('-', ' ').title(),
+                "purchasable": True,
+                "page": page
+            })
+        page += 1
+    driver.quit()
+    return pd.DataFrame(all_data)
+
+# Estimation de prix
+def estimate_price():
+    print("Voici les catégories disponibles :")
+    for idx, cat in enumerate(CATEGORIES, 1):
+        print(f" {idx}. {cat}")
+    while True:
+        try:
+            cat_choice = int(input("Choisissez le numéro de la catégorie : ").strip())
+            if 1 <= cat_choice <= len(CATEGORIES):
+                categorie = CATEGORIES[cat_choice - 1]
+                break
+            else:
+                print("Numéro invalide. Réessayez.")
+        except ValueError:
+            print("Veuillez entrer un numéro valide.")
+
+    produit_cible = input("Saisissez le nom du produit à estimer : ").strip().lower()
+    df = scrap_all_pages_products(categorie)
+    if df.empty:
+        print("⚠️ Aucun produit trouvé dans cette catégorie.")
+        return
+
+    df['similarity'] = df['product_name'].apply(lambda x: fuzz.partial_ratio(produit_cible, x.lower()) if pd.notnull(x) else 0)
+    similaires = df[df['similarity'] >= 60]
+
+    if similaires.empty:
+        print("⚠️ Aucun produit similaire trouvé.")
+    else:
+        prix_moyen = similaires['price'].mean()
+        prix_min = similaires['price'].min()
+        prix_max = similaires['price'].max()
+        print("Produits similaires trouvés :")
+        print(similaires[['product_name', 'price']])
+        print(f"Nombre de produits similaires : {len(similaires)}")
+        print(f"Prix estimé moyen : {prix_moyen:.2f} €")
+        print(f"Prix minimum : {prix_min:.2f} €, Prix maximum : {prix_max:.2f} €")
+
+        plt.figure(figsize=(8,5))
+        plt.hist(similaires['price'], bins=10, color='skyblue', edgecolor='black')
+        plt.xlabel('Prix (€)')
+        plt.ylabel('Nombre de produits')
+        plt.title('Distribution des prix des produits similaires')
+        plt.tight_layout()
+        plt.show()
+
+# Menu principal
+mode = input("Souhaitez-vous scraper des promotions, des produits, ou estimer un prix ? [promotions/products/estimate] : ").strip().lower()
+while mode not in ["promotions", "products", "estimate"]:
+    mode = input("Veuillez entrer 'promotions', 'products', ou 'estimate' : ").strip().lower()
+
+if mode == "promotions":
+    product_catalog = scrap_all_products_for_category_matching()
+    df = scrap_all_pages_promotions(product_catalog)
+    filename = "carrefour_promotions_allpages.csv"
+elif mode == "products":
+    print("Voici les catégories disponibles :")
+    for idx, cat in enumerate(CATEGORIES, 1):
+        print(f" {idx}. {cat}")
+    while True:
+        try:
+            cat_choice = int(input("Choisissez le numéro de la catégorie : ").strip())
+            if 1 <= cat_choice <= len(CATEGORIES):
+                categorie = CATEGORIES[cat_choice - 1]
+                break
+            else:
+                print("Numéro invalide. Réessayez.")
+        except ValueError:
+            print("Veuillez entrer un numéro valide.")
+    df = scrap_all_pages_products(categorie)
+    filename = f"carrefour_products_{categorie}_allpages.csv"
+else:
+    estimate_price()
+    df = None
+
+if df is not None and not df.empty:
+    csv_path = os.path.join(OUTPUT_FOLDER, filename)
+    df.to_csv(csv_path, index=False)
+    print(f"✅ Fichier CSV enregistré : {csv_path}")
