@@ -1,3 +1,4 @@
+#Scraping et estimation par fuzzing matching pour les 5 premières pages
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import pandas as pd
