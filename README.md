@@ -9,7 +9,7 @@ This project is a Python-based web scraping tool designed to extract product and
 - **Scrape Promotions**: Extract promotional product data, including current price, old price, discount percentage, and more.
 - **Scrape Products**: Extract product data from a specific category, including product name, price, and unit price.
 - **Estimate Product Prices**: Estimate the price of a product by finding similar items in a category using fuzzy matching.
-- **Export Data**: Save the scraped data as CSV and Excel files, with additional analyses for promotions.
+- **Export Data**: Save the scraped data as CSV and Excel files,.
 
 ## Requirements
 
@@ -33,7 +33,7 @@ Ce projet a pour but de **scraper les produits et promotions** du site **Carrefo
 - **Récupérer les produits** d'une catégorie spécifique.
 - **Collecter les promotions** (avec anciens et nouveaux prix).
 - **Estimer le prix d'un produit** en fonction de son nom via des produits similaires.
-- **Analyser les données** (prix moyens, réductions) et **exporter** les résultats en **CSV** et **Excel**.
+- **Analyser les données** (prix moyens, top 5  des réductions) et **exporter** les résultats en **CSV** et **Excel**.
 
 ---
 
@@ -51,7 +51,7 @@ Ce projet a pour but de **scraper les produits et promotions** du site **Carrefo
 - Les données sont **exportées en CSV** (brut) et en **Excel** (avec analyses supplémentaires).
 - Analyses incluses dans le fichier Excel (pour promotions) :
   - **Moyenne de la différence de prix** par catégorie.
-  - **Nombre total de promotions** par catégorie.
+
 
 ### 4. Estimation en temps réel
 - **Saisie d’un nom de produit**.
@@ -60,7 +60,7 @@ Ce projet a pour but de **scraper les produits et promotions** du site **Carrefo
 - Affichage :
   - **Liste des produits similaires**.
   - **Prix moyen, minimum, maximum**.
-  - Un **graphique** (histogramme) de la **distribution des prix**.
+
 
 ---
 
@@ -105,13 +105,6 @@ Ce projet a pour but de **scraper les produits et promotions** du site **Carrefo
   - Feuille **Moyenne différences** (promotions).
   - Feuille **Nombre promotions** (promotions).
 
----
-
-## 📈 Exemples d’analyses générées
-
-- **Moyenne des réductions** par catégorie.
-- **Nombre total de promotions** par catégorie.
-- **Histogramme des prix similaires** (en mode estimation).
 
 ---
 
