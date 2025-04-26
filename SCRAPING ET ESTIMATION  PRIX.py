@@ -47,7 +47,7 @@ if mode == "products":
 else:
     categorie = None
 
-# Scraping d'une seule page de promotions
+# Scraping des pages de promotions
 def scrap_single_page_promotions():
     driver = webdriver.Chrome()
     page = 0
@@ -118,7 +118,7 @@ def scrap_single_page_promotions():
     driver.quit()
     return pd.DataFrame(all_data)
 
-# Scraping d'une seule page de produits
+# Scraping des pages de produits
 def scrap_single_page_products(categorie):
     driver = webdriver.Chrome()
     page = 0
