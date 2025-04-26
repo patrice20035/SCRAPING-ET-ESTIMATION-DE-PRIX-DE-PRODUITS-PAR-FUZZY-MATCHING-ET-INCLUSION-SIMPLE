@@ -1,6 +1,26 @@
-# Analyse-de-vente-de-produits
+# Scraping et Analyse-de-vente-de-produits
 
-Voici un **README clair et détaillé** pour ton projet Carrefour Scraper :
+# Web Scraping Tool for Carrefour Products and Promotions
+
+This project is a Python-based web scraping tool designed to extract product and promotion data from the Carrefour website. It allows users to scrape promotions, scrape products from specific categories, or estimate the price of a product based on similar items.
+
+## Features
+
+- **Scrape Promotions**: Extract promotional product data, including current price, old price, discount percentage, and more.
+- **Scrape Products**: Extract product data from a specific category, including product name, price, and unit price.
+- **Estimate Product Prices**: Estimate the price of a product by finding similar items in a category using fuzzy matching.
+- **Export Data**: Save the scraped data as CSV and Excel files, with additional analyses for promotions.
+
+## Requirements
+
+Before running the script, ensure you have the following installed:
+
+- Python 3.7 or higher
+- Required Python libraries:
+  ```bash
+  pip install selenium pandas matplotlib openpyxl rapidfuzz
+
+Voici une **explication claire et détaillée** pour notre projet Carrefour Scraper :
 
 ---
 
@@ -106,10 +126,12 @@ Ce projet a pour but de **scraper les produits et promotions** du site **Carrefo
 
 ## 👨‍💻 Auteur
 
-Projet développé par **[Ton Nom]** dans le cadre du cours de **Programmation Python**.
+Projet développé par 
+-**KAMEDA PATRICE THOMAS**
+-**KABORE JULIEN**
+-**JULIANO**
+dans le cadre du cours de **Programmation Python**.
 
 ```
 
----
 
-Tu veux personnaliser une section (ex: auteur, fonctionnalités, etc.) ou on le laisse comme ça ? 😎
