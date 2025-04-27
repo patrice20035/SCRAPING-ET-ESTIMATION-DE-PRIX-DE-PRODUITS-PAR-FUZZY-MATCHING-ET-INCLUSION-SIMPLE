@@ -24,7 +24,7 @@ Voici une **explication claire et détaillée** pour notre projet Carrefour Scra
 
 ---
 
-```markdown
+
 # 🛒 Carrefour Web Scraper
 
 ## 📋 Objectif
