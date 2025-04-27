@@ -4,7 +4,6 @@ import pandas as pd
 import os
 import time
 import re
-from rapidfuzz import fuzz  # Ajout pour fuzzy matching
 import matplotlib.pyplot as plt
 
 # Liste des catégories disponibles
@@ -199,14 +198,6 @@ def estimate_price():
         print(f"Prix estimé moyen : {prix_moyen:.2f} €")
         print(f"Prix minimum : {prix_min:.2f} €, Prix maximum : {prix_max:.2f} €")
 
-        # Graphique des prix
-        plt.figure(figsize=(8,5))
-        plt.hist(similaires['price'], bins=10, color='skyblue', edgecolor='black')
-        plt.xlabel('Prix (€)')
-        plt.ylabel('Nombre de produits')
-        plt.title('Distribution des prix des produits similaires')
-        plt.tight_layout()
-        plt.show()
 
 # Exécution et sauvegarde CSV
 if mode == "estimate":
