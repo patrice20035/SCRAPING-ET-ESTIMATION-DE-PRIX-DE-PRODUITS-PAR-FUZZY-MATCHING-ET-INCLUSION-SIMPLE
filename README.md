@@ -117,12 +117,16 @@ Ce projet a pour but de **scraper les produits et promotions** du site **Carrefo
 
 ---
 
-## 👨‍💻 Auteur
+## 👨‍💻 Auteurs
 
 Projet développé par 
+
 -**KAMEDA PATRICE THOMAS**
+
 -**KABORE JULIEN**
+
 -**JULIANO**
+
 dans le cadre du cours de **Programmation Python**.
 
 ```
