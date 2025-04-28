@@ -25,9 +25,9 @@ Voici une **explication claire et détaillée** pour notre projet Carrefour Scra
 ---
 
 
-# 🛒 Carrefour Web Scraper
+#  Carrefour Web Scraper
 
-## 📋 Objectif
+##  Objectif
 
 Ce projet a pour but de **scraper les produits et promotions** du site **Carrefour.fr** afin de :
 - **Récupérer les produits** d'une catégorie spécifique.
@@ -37,7 +37,7 @@ Ce projet a pour but de **scraper les produits et promotions** du site **Carrefo
 
 ---
 
-## ⚙️ Fonctionnalités principales
+##  Fonctionnalités principales
 
 ### 1. Modes disponibles
 - **Products** : Scrape les **produits d'une catégorie** au choix.
@@ -64,7 +64,7 @@ Ce projet a pour but de **scraper les produits et promotions** du site **Carrefo
 
 ---
 
-## 🖥️ Technologies utilisées
+##  Technologies utilisées
 
 - **Python**
 - **Selenium** : pour le scraping web.
@@ -74,7 +74,7 @@ Ce projet a pour but de **scraper les produits et promotions** du site **Carrefo
 
 ---
 
-## 🚀 Comment utiliser
+##  Comment utiliser
 
 1. **Installer les dépendances** :
    ```bash
@@ -97,7 +97,7 @@ Ce projet a pour but de **scraper les produits et promotions** du site **Carrefo
 
 ---
 
-## 📂 Fichiers générés
+##  Fichiers générés
 
 - **CSV** : contient les données brutes.
 - **Excel** : contient :
@@ -108,7 +108,7 @@ Ce projet a pour but de **scraper les produits et promotions** du site **Carrefo
 
 ---
 
-## 🛠️ Possibilités d’amélioration
+##  Possibilités d’amélioration
 
 - Ajouter la gestion **des erreurs réseau** ou des **timeouts**.
 - Supporter **d’autres sites marchands**.
@@ -117,7 +117,7 @@ Ce projet a pour but de **scraper les produits et promotions** du site **Carrefo
 
 ---
 
-## 👨‍💻 Auteurs
+##  Auteurs
 
 Projet développé par 
 
