@@ -92,7 +92,7 @@ if mode in ["promotions", "products"]:
     # Sauvegarde CSV
     csv_path = os.path.join(OUTPUT_FOLDER, filename)
     df.to_csv(csv_path, index=False)
-    print(f"✅ Fichier CSV enregistré : {csv_path}")
+    print(f" Fichier CSV enregistré : {csv_path}")
     print(df.head())
 
 # Mode estimate
@@ -102,13 +102,13 @@ elif mode == "estimate":
     df = scrap_pages(base_url)
 
     if df.empty:
-        print("⚠️ Aucun produit trouvé dans cette catégorie.")
+        print(" Aucun produit trouvé dans cette catégorie.")
     else:
         df['similarity'] = df['product_name'].apply(lambda x: fuzz.partial_ratio(produit_cible, x.lower()) if pd.notnull(x) else 0)
         similaires = df[df['similarity'] >= 60]
 
         if similaires.empty:
-            print("⚠️ Aucun produit similaire trouvé.")
+            print(" Aucun produit similaire trouvé.")
         else:
             prix_moyen = similaires['price'].mean()
             prix_min = similaires['price'].min()
