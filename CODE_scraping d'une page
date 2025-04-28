@@ -151,7 +151,7 @@ else:
 csv_path = os.path.join(OUTPUT_FOLDER, filename)
 if not df.empty:
     df.to_csv(csv_path, index=False)
-    print(f"✅ Fichier CSV enregistré : {csv_path}")
+    print(f" Fichier CSV enregistré : {csv_path}")
     print(df.head())
 else:
-    print("⚠️ Aucun produit correspondant aux critères n'a été trouvé.")
+    print(" Aucun produit correspondant aux critères n'a été trouvé.")
