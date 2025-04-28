@@ -204,7 +204,7 @@ def estimate_price():
     # Scrape les produits de la catégorie choisie
     df = scrap_single_page_products(categorie)
     if df.empty:  # Si aucun produit n'est trouvé
-        print("⚠️ Aucun produit trouvé dans cette catégorie.")
+        print(" Aucun produit trouvé dans cette catégorie.")
         return
 
     # Calcule la similarité entre le produit cible et les produits trouvés
@@ -212,7 +212,7 @@ def estimate_price():
     similaires = df[df['similarity']]  # Filtre les produits similaires
 
     if similaires.empty:  # Si aucun produit similaire n'est trouvé
-        print("⚠️ Aucun produit similaire trouvé.")
+        print(" Aucun produit similaire trouvé.")
     else:
         # Calcule les statistiques sur les prix des produits similaires
         prix_moyen = similaires['price'].mean()
@@ -240,7 +240,7 @@ if mode in ["promotions", "products"]:
     csv_path = os.path.join(OUTPUT_FOLDER, filename)  # Chemin complet du fichier CSV
     if not df.empty:  # Si des données ont été récupérées
         df.to_csv(csv_path, index=False)  # Sauvegarde en CSV
-        print(f"✅ Fichier CSV enregistré : {csv_path}")
+        print(f" Fichier CSV enregistré : {csv_path}")
 
         # Export vers Excel avec analyses supplémentaires
         excel_path = csv_path.replace('.csv', '.xlsx')  # Chemin du fichier Excel
@@ -255,13 +255,13 @@ if mode in ["promotions", "products"]:
                 if 'category' in df.columns:
                     count_promos = df.groupby('category').size().reset_index(name='count_promotions')
                     count_promos.to_excel(writer, sheet_name='Nombre promotions', index=False)
-        print(f"📊 Fichier Excel avec analyses enregistré : {excel_path}")
+        print(f" Fichier Excel avec analyses enregistré : {excel_path}")
         print(df.head())  # Affiche les premières lignes des données
     else:
-        print("⚠️ Aucun produit correspondant aux critères n'a été trouvé.")
+        print(" Aucun produit correspondant aux critères n'a été trouvé.")
 
     # Analyse supplémentaire pour les promotions (non implémentée dans ce code)
     if mode == "promotions":
         pass
 else:
-    print("⚠️ Aucun produit correspondant aux critères n'a été trouvé.")
+    print(" Aucun produit correspondant aux critères n'a été trouvé.")
