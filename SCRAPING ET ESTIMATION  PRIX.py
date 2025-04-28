@@ -180,14 +180,14 @@ def estimate_price():
     produit_cible = input("Saisissez le nom du produit à estimer : ").strip().lower()
     df = scrap_single_page_products(categorie)
     if df.empty:
-        print("⚠️ Aucun produit trouvé dans cette catégorie.")
+        print(" Aucun produit trouvé dans cette catégorie.")
         return
 
     df['similarity'] = df['product_name'].apply(lambda x: produit_cible in x.lower() if pd.notnull(x) else False)
     similaires = df[df['similarity']]
 
     if similaires.empty:
-        print("⚠️ Aucun produit similaire trouvé.")
+        print(" Aucun produit similaire trouvé.")
     else:
         prix_moyen = similaires['price'].mean()
         prix_min = similaires['price'].min()
@@ -213,7 +213,7 @@ if mode in ["promotions", "products"]:
     csv_path = os.path.join(OUTPUT_FOLDER, filename)
     if not df.empty:
         df.to_csv(csv_path, index=False)
-        print(f"✅ Fichier CSV enregistré : {csv_path}")
+        print(f" Fichier CSV enregistré : {csv_path}")
 
         # Exporter vers Excel avec analyses
         excel_path = csv_path.replace('.csv', '.xlsx')
@@ -228,10 +228,10 @@ if mode in ["promotions", "products"]:
                 if 'category' in df.columns:
                     count_promos = df.groupby('category').size().reset_index(name='count_promotions')
                     count_promos.to_excel(writer, sheet_name='Nombre promotions', index=False)
-        print(f"📊 Fichier Excel avec analyses enregistré : {excel_path}")
+        print(f" Fichier Excel avec analyses enregistré : {excel_path}")
         print(df.head())
     else:
-        print("⚠️ Aucun produit correspondant aux critères n'a été trouvé.")
+        print(" Aucun produit correspondant aux critères n'a été trouvé.")
 
     # Analyse pour promotions uniquement
     if mode == "promotions":
