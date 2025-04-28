@@ -1,0 +1,267 @@
+#scraping et estimamation par inclusion carrefour
+
+# Importation des modules nécessaires
+from selenium import webdriver  # Pour automatiser le navigateur web
+from selenium.webdriver.common.by import By  # Pour localiser les éléments sur une page web
+import pandas as pd  # Pour manipuler les données sous forme de DataFrame
+import os  # Pour les opérations sur les fichiers et dossiers
+import time  # Pour gérer les temps d'attente
+import re  # Pour les expressions régulières
+import matplotlib.pyplot as plt  # Pour les visualisations (bien que non utilisé dans ce code)
+
+# Liste des catégories disponibles sur le site Carrefour
+CATEGORIES = [
+    'bio-et-ecologie', 'fruits-et-legumes', 'viandes-et-poissons', 'pains-et-patisseries',
+    'cremerie-et-produits-laitiers', 'charcuterie-et-traiteur', 'surgeles', 'epicerie-salee',
+    'epicerie-sucree', 'beaute-et-sante', 'boissons', 'nutrition-et-vegetale', 'hygiene-et-beaute',
+    'entretien-et-nettoyage', 'animalerie', 'bebe', 'jardin', 'entretien-de-la-maison',
+    'maison-et-decoration', 'cuisine', 'gros-electromenager', 'bricolage',
+    'velo-trotinettes-et-loisirs', 'smartphones-et-objets-connectes', 'image-et-son',
+    'informatique-et-bureau', 'jeux-videos', 'jeux-et-jouets', 'mode-et-bagagerie'
+]
+
+# Dossier de sortie où seront enregistrés les fichiers CSV et Excel
+OUTPUT_FOLDER = r"C:/Users/DELL/OneDrive - etu.unistra.fr/Bureau/cours fac/PROGRAMMATION PYTHON/PROJET/Output"
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)  # Crée le dossier s'il n'existe pas déjà
+
+# Demander à l'utilisateur ce qu'il veut scraper
+mode = input("Souhaitez-vous scraper des promotions, des produits, ou estimer un prix ? [promotions/products/estimate] : ").strip().lower()
+# Vérification que le mode saisi est valide
+while mode not in ["promotions", "products", "estimate"]:
+    mode = input("Veuillez entrer 'promotions', 'products', ou 'estimate' : ").strip().lower()
+
+# Si l'utilisateur a choisi de scraper des produits, afficher les catégories disponibles
+if mode == "products":
+    print("Voici les catégories disponibles :")
+    for idx, cat in enumerate(CATEGORIES, 1):  # Affiche chaque catégorie avec un numéro
+        print(f" {idx}. {cat}")
+    # Demander à l'utilisateur de choisir une catégorie
+    while True:
+        try:
+            cat_choice = int(input("Choisissez le numéro de la catégorie : ").strip())
+            if 1 <= cat_choice <= len(CATEGORIES):  # Vérifie que le numéro est valide
+                categorie = CATEGORIES[cat_choice - 1]  # Récupère la catégorie correspondante
+                break
+            else:
+                print("Numéro invalide. Réessayez.")
+        except ValueError:  # Gère les erreurs si l'utilisateur n'entre pas un nombre
+            print("Veuillez entrer un numéro valide.")
+else:
+    categorie = None  # Si ce n'est pas le mode 'products', la catégorie reste None
+
+# Fonction pour scraper les promotions sur une seule page
+def scrap_single_page_promotions():
+    driver = webdriver.Chrome()  # Initialise le navigateur Chrome
+    page = 0  # Commence à la page 0
+    all_data = []  # Liste pour stocker toutes les données
+    while True:
+        # Charge la page des promotions avec le numéro de page
+        driver.get(f"https://www.carrefour.fr/promotions?noRedirect=1&page={page}")
+        time.sleep(5)  # Attend 5 secondes pour le chargement de la page
+        # Trouve tous les éléments de produits sur la page
+        products = driver.find_elements(By.CLASS_NAME, "product-list-grid__item")
+        if not products:  # Si aucun produit n'est trouvé, sort de la boucle
+            break
+
+        data = []  # Liste pour stocker les données de la page courante
+        for p in products:  # Parcourt chaque produit
+            try:
+                # Récupère le nom du produit
+                name = p.find_element(By.CSS_SELECTOR, "a.product-card-title").text
+            except:
+                name = None  # Si le nom n'est pas trouvé
+
+            price = None
+            old_price = None
+            try:
+                # Récupère le prix actuel
+                price_block = p.find_element(By.CSS_SELECTOR, "div.product-price__amount--main")
+                price_text = price_block.text
+                # Nettoie le texte du prix (enlève les caractères non numériques)
+                clean_price = re.sub(r'[^\d,\.]', '', price_text)
+                price = float(clean_price.replace(',', '.'))  # Convertit en float
+            except:
+                pass  # Si le prix n'est pas trouvé
+
+            try:
+                # Récupère l'ancien prix
+                old_price_block = p.find_element(By.CSS_SELECTOR, "div.product-price__amount--old")
+                old_price_text = old_price_block.text
+                clean_old_price = re.sub(r'[^\d,\.]', '', old_price_text)
+                old_price = float(clean_old_price.replace(',', '.'))  # Convertit en float
+            except:
+                pass  # Si l'ancien prix n'est pas trouvé
+
+            try:
+                # Récupère l'unité de prix (par kg, par L, etc.)
+                unit = p.find_element(By.CSS_SELECTOR, "span.product-list-card-plp-grid__per-unit-label").text
+            except:
+                unit = None  # Si l'unité n'est pas trouvée
+
+            try:
+                # Récupère la description de la promotion
+                promo_description = p.find_element(By.CSS_SELECTOR, "span.promotion-label-refonte__label").text
+            except:
+                promo_description = None  # Si la description n'est pas trouvée
+
+            try:
+                # Récupère la catégorie du produit
+                category = p.find_element(By.CSS_SELECTOR, "span.product-card-category").text
+            except:
+                category = None  # Si la catégorie n'est pas trouvée
+
+            # Ajoute les données du produit si c'est une promotion valide
+            if (price and old_price and price != old_price) or promo_description:
+                data.append({
+                    "product_name": name,
+                    "price": price,
+                    "old_price": old_price,
+                    "difference": round(old_price - price, 2) if price and old_price else None,  # Calcul de la différence
+                    "percentage_difference": round(((old_price - price) / old_price) * 100, 2) if price and old_price else None,  # Calcul du pourcentage de réduction
+                    "price_per_unit": unit,
+                    "promo_description": promo_description,
+                    "category": category,
+                    "purchasable": True,  # Indique que le produit est achetable
+                    "page": page  # Numéro de la page
+                })
+
+        all_data.extend(data)  # Ajoute les données de la page à la liste globale
+        page += 1  # Passe à la page suivante
+    driver.quit()  # Ferme le navigateur
+    return pd.DataFrame(all_data)  # Retourne les données sous forme de DataFrame
+
+# Fonction pour scraper les produits d'une catégorie sur une seule page
+def scrap_single_page_products(categorie):
+    driver = webdriver.Chrome()  # Initialise le navigateur Chrome
+    page = 0  # Commence à la page 0
+    all_data = []  # Liste pour stocker toutes les données
+    while True:
+        # Charge la page de la catégorie avec le numéro de page
+        driver.get(f"https://www.carrefour.fr/r/{categorie}?noRedirect=1&page={page}")
+        time.sleep(5)  # Attend 5 secondes pour le chargement de la page
+        # Trouve tous les éléments de produits sur la page
+        products = driver.find_elements(By.CLASS_NAME, "product-list-grid__item")
+        if not products:  # Si aucun produit n'est trouvé, sort de la boucle
+            break
+
+        data = []  # Liste pour stocker les données de la page courante
+        for p in products:  # Parcourt chaque produit
+            try:
+                # Récupère le nom du produit
+                name = p.find_element(By.CSS_SELECTOR, "a.product-card-title").text
+            except:
+                name = None  # Si le nom n'est pas trouvé
+
+            try:
+                # Récupère le prix du produit
+                price_block = p.find_element(By.CSS_SELECTOR, "div.product-price__amount--main")
+                parts = price_block.find_elements(By.CSS_SELECTOR, "p.product-price__content")
+                price_text = ''.join([part.text for part in parts])  # Combine les parties du prix
+                price = float(price_text.replace(',', '.').replace('€', '').strip())  # Convertit en float
+            except:
+                price = None  # Si le prix n'est pas trouvé
+
+            try:
+                # Récupère l'unité de prix
+                unit = p.find_element(By.CSS_SELECTOR, "span.product-list-card-plp-grid__per-unit-label").text
+            except:
+                unit = None  # Si l'unité n'est pas trouvée
+
+            # Ajoute les données du produit
+            data.append({
+                "product_name": name,
+                "price": price,
+                "price_per_unit": unit,
+                "category": categorie.replace('-', ' ').title(),  # Formate le nom de la catégorie
+                "purchasable": True,  # Indique que le produit est achetable
+                "page": page  # Numéro de la page
+            })
+
+        all_data.extend(data)  # Ajoute les données de la page à la liste globale
+        page += 1  # Passe à la page suivante
+    driver.quit()  # Ferme le navigateur
+    return pd.DataFrame(all_data)  # Retourne les données sous forme de DataFrame
+
+# Fonction pour estimer le prix d'un produit
+def estimate_price():
+    print("Voici les catégories disponibles :")
+    for idx, cat in enumerate(CATEGORIES, 1):  # Affiche les catégories disponibles
+        print(f" {idx}. {cat}")
+    # Demande à l'utilisateur de choisir une catégorie
+    while True:
+        try:
+            cat_choice = int(input("Choisissez le numéro de la catégorie pour l'estimation : ").strip())
+            if 1 <= cat_choice <= len(CATEGORIES):  # Vérifie que le numéro est valide
+                categorie = CATEGORIES[cat_choice - 1]  # Récupère la catégorie correspondante
+                break
+            else:
+                print("Numéro invalide. Réessayez.")
+        except ValueError:  # Gère les erreurs si l'utilisateur n'entre pas un nombre
+            print("Veuillez entrer un numéro valide.")
+
+    # Demande le nom du produit à estimer
+    produit_cible = input("Saisissez le nom du produit à estimer : ").strip().lower()
+    # Scrape les produits de la catégorie choisie
+    df = scrap_single_page_products(categorie)
+    if df.empty:  # Si aucun produit n'est trouvé
+        print("⚠️ Aucun produit trouvé dans cette catégorie.")
+        return
+
+    # Calcule la similarité entre le produit cible et les produits trouvés
+    df['similarity'] = df['product_name'].apply(lambda x: produit_cible in x.lower() if pd.notnull(x) else False)
+    similaires = df[df['similarity']]  # Filtre les produits similaires
+
+    if similaires.empty:  # Si aucun produit similaire n'est trouvé
+        print("⚠️ Aucun produit similaire trouvé.")
+    else:
+        # Calcule les statistiques sur les prix des produits similaires
+        prix_moyen = similaires['price'].mean()
+        prix_min = similaires['price'].min()
+        prix_max = similaires['price'].max()
+        print("Produits similaires trouvés :")
+        print(similaires[['product_name', 'price']])  # Affiche les produits similaires
+        print(f"Nombre de produits similaires : {len(similaires)}")
+        print(f"Prix estimé moyen : {prix_moyen:.2f} €")
+        print(f"Prix minimum : {prix_min:.2f} €, Prix maximum : {prix_max:.2f} €")
+
+
+# Exécution principale du script
+if mode == "estimate":
+    estimate_price()  # Lance la fonction d'estimation de prix
+elif mode == "promotions":
+    df = scrap_single_page_promotions()  # Scrape les promotions
+    filename = "carrefour_promotions_page0.csv"  # Nom du fichier CSV
+else:
+    df = scrap_single_page_products(categorie)  # Scrape les produits d'une catégorie
+    filename = f"carrefour_products_{categorie}_page0.csv"  # Nom du fichier CSV
+
+# Sauvegarde des données si le mode est 'promotions' ou 'products'
+if mode in ["promotions", "products"]:
+    csv_path = os.path.join(OUTPUT_FOLDER, filename)  # Chemin complet du fichier CSV
+    if not df.empty:  # Si des données ont été récupérées
+        df.to_csv(csv_path, index=False)  # Sauvegarde en CSV
+        print(f"✅ Fichier CSV enregistré : {csv_path}")
+
+        # Export vers Excel avec analyses supplémentaires
+        excel_path = csv_path.replace('.csv', '.xlsx')  # Chemin du fichier Excel
+        with pd.ExcelWriter(excel_path) as writer:  # Crée un fichier Excel
+            df.to_excel(writer, sheet_name='Données', index=False)  # Ajoute les données
+            if mode == "promotions":
+                # Ajoute une analyse des différences moyennes par catégorie
+                if 'category' in df.columns and 'difference' in df.columns:
+                    mean_diff = df[df['old_price'].notna()].groupby('category')['difference'].mean().reset_index()
+                    mean_diff.to_excel(writer, sheet_name='Moyenne différences', index=False)
+                # Ajoute le nombre de promotions par catégorie
+                if 'category' in df.columns:
+                    count_promos = df.groupby('category').size().reset_index(name='count_promotions')
+                    count_promos.to_excel(writer, sheet_name='Nombre promotions', index=False)
+        print(f"📊 Fichier Excel avec analyses enregistré : {excel_path}")
+        print(df.head())  # Affiche les premières lignes des données
+    else:
+        print("⚠️ Aucun produit correspondant aux critères n'a été trouvé.")
+
+    # Analyse supplémentaire pour les promotions (non implémentée dans ce code)
+    if mode == "promotions":
+        pass
+else:
+    print("⚠️ Aucun produit correspondant aux critères n'a été trouvé.")
