@@ -1,0 +1,122 @@
+#Scraping et estimation par fuzzing matching pour toutes les pages
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import pandas as pd
+import os
+import time
+import re
+from rapidfuzz import fuzz
+
+# Liste des catégories
+CATEGORIES = [
+    'bio-et-ecologie', 'fruits-et-legumes', 'viandes-et-poissons', 'pains-et-patisseries',
+    'cremerie-et-produits-laitiers', 'charcuterie-et-traiteur', 'surgeles', 'epicerie-salee',
+    'epicerie-sucree', 'beaute-et-sante', 'boissons', 'nutrition-et-vegetale', 'hygiene-et-beaute',
+    'entretien-et-nettoyage', 'animalerie', 'bebe', 'jardin', 'entretien-de-la-maison',
+    'maison-et-decoration', 'cuisine', 'gros-electromenager', 'bricolage',
+    'velo-trotinettes-et-loisirs', 'smartphones-et-objets-connectes', 'image-et-son',
+    'informatique-et-bureau', 'jeux-videos', 'jeux-et-jouets', 'mode-et-bagagerie'
+]
+
+# Dossier de sortie
+OUTPUT_FOLDER = r"C:/Users/DELL/OneDrive - etu.unistra.fr/Bureau/cours fac/PROGRAMMATION PYTHON/PROJET/Output"
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+# Mode utilisateur
+mode = input("Souhaitez-vous scraper des promotions, des produits, ou estimer un prix ? [promotions/products/estimate] : ").strip().lower()
+while mode not in ["promotions", "products", "estimate"]:
+    mode = input("Veuillez entrer 'promotions', 'products', ou 'estimate' : ").strip().lower()
+
+# Sélection de catégorie si nécessaire
+if mode in ["products", "estimate"]:
+    print("\nCatégories disponibles :")
+    for idx, cat in enumerate(CATEGORIES, 1):
+        print(f" {idx}. {cat}")
+    while True:
+        try:
+            cat_choice = int(input("Choisissez le numéro de la catégorie : ").strip())
+            if 1 <= cat_choice <= len(CATEGORIES):
+                categorie = CATEGORIES[cat_choice - 1]
+                break
+            else:
+                print("Numéro invalide. Réessayez.")
+        except ValueError:
+            print("Veuillez entrer un numéro valide.")
+else:
+    categorie = None
+
+# Scraping toutes les pages
+def scrap_pages(url_base):
+    driver = webdriver.Chrome()
+    all_data = []
+    page = 0
+    while True:
+        driver.get(f"...page={page}")
+
+        time.sleep(5)
+        products = driver.find_elements(By.CLASS_NAME, "product-list-grid__item")
+        print(f"Scraping page {page + 1} : {len(products)} produits")
+
+        for p in products:
+            try:
+                name = p.find_element(By.CSS_SELECTOR, "a.product-card-title").text
+            except:
+                name = None
+
+            try:
+                price_block = p.find_element(By.CSS_SELECTOR, "div.product-price__amount--main")
+                price_text = price_block.text
+                clean_price = re.sub(r'[^\d,\.]', '', price_text)
+                price = float(clean_price.replace(',', '.'))
+            except:
+                price = None
+
+            all_data.append({
+                "product_name": name,
+                "price": price,
+                "page": page + 1
+            })
+
+    driver.quit()
+    return pd.DataFrame(all_data)
+
+# Mode promotions / products
+if mode in ["promotions", "products"]:
+    if mode == "promotions":
+        base_url = "https://www.carrefour.fr/promotions?noRedirect=1"
+        df = scrap_pages(base_url)
+        filename = "carrefour_promotions_5pages.csv"
+    else:
+        base_url = f"https://www.carrefour.fr/r/{categorie}?noRedirect=1"
+        df = scrap_pages(base_url)
+        filename = f"carrefour_products_{categorie}_5pages.csv"
+
+    # Sauvegarde CSV
+    csv_path = os.path.join(OUTPUT_FOLDER, filename)
+    df.to_csv(csv_path, index=False)
+    print(f"✅ Fichier CSV enregistré : {csv_path}")
+    print(df.head())
+
+# Mode estimate
+elif mode == "estimate":
+    produit_cible = input("Saisissez le nom du produit à estimer : ").strip().lower()
+    base_url = f"https://www.carrefour.fr/r/{categorie}?noRedirect=1"
+    df = scrap_pages(base_url)
+
+    if df.empty:
+        print("⚠️ Aucun produit trouvé dans cette catégorie.")
+    else:
+        df['similarity'] = df['product_name'].apply(lambda x: fuzz.partial_ratio(produit_cible, x.lower()) if pd.notnull(x) else 0)
+        similaires = df[df['similarity'] >= 100]
+
+        if similaires.empty:
+            print("⚠️ Aucun produit similaire trouvé.")
+        else:
+            prix_moyen = similaires['price'].mean()
+            prix_min = similaires['price'].min()
+            prix_max = similaires['price'].max()
+            print("\nProduits similaires trouvés :")
+            print(similaires[['product_name', 'price']])
+            print(f"\nNombre de produits similaires : {len(similaires)}")
+            print(f"Prix estimé moyen : {prix_moyen:.2f} €")
+            print(f"Prix minimum : {prix_min:.2f} €, Prix maximum : {prix_max:.2f} €")
